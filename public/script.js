@@ -115,9 +115,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     totalPriceElement.textContent = `Total Price: $${totalPrice}`;
   }
 
-  // 결제 버튼 클릭 처리
-  checkoutBtn.addEventListener('click', () => {
-    alert(`Total Price: ${totalPriceElement.textContent}`);
-    // 여기에 실제 결제 처리 로직을 추가하면 됩니다.
+  checkoutBtn.addEventListener('click', async() => {
+    const selectedSeats = Array.from(document.querySelectorAll('.seat.selected')).map(seat => seat.dataset.seat);
+    if (selectedSeats.length === 0) {
+    alert('장바구니가 비어 있습니다. 좌석을 선택해주세요.');
+    return;
+  }
+  // 서버에 현재 카트에 담긴 티켓 정보를 요청
+  const response = await fetch('/api/cart', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      selectedSeats,
+    }),
+  });
+  const cartData = await response.json();
+
+  // 응답으로 받은 카트 정보를 사용하여 URL을 생성
+  const orderUrl = `/order.html?cart=${encodeURIComponent(JSON.stringify(cartData))}`;
+  window.location.href = orderUrl;
   });
 });

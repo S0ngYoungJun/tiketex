@@ -141,3 +141,24 @@ app.post('/api/remove-from-cart', async (req, res) => {
   }
 });
 
+app.get('/order.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public', 'order.html'));
+});
+
+app.post('/api/cart', async (req, res) => {
+  const selectedSeats = req.body.selectedSeats;
+
+  const connection = await pool.getConnection();
+  try {
+    // 카트에 담긴 티켓 정보를 가져오기
+    const cartItems = await connection.query('SELECT * FROM cart WHERE seat IN (?)', [selectedSeats]);
+
+    res.json(cartItems);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Error fetching cart items.' });
+  } finally {
+    connection.release();
+  }
+});
+
