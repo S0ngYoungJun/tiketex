@@ -1,0 +1,22 @@
+
+.seat-row {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+}
+
+.seat {
+  width: 30px; /* 좌석의 가로 크기 조절 */
+  height: 30px; /* 좌석의 세로 크기 조절 */
+  border: 1px solid #ddd;
+  margin: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.seat.reserved {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
