@@ -86,31 +86,56 @@ app.get('/api/tickets', async (req, res) => {
   }
 });
 // 좌석 예약 API
-app.post('/api/reserve-seats', async (req, res) => {
-  const selectedSeats = req.body.selectedSeats; // 클라이언트에서 전송한 선택된 좌석 배열
-  let totalPrice = 0;
+app.post('/api/add-to-cart', async (req, res) => {
+  const { seatId } = req.body;
 
   const connection = await pool.getConnection();
   try {
-    // TODO: 티켓 예약 및 카트 업데이트 로직 추가
-    for (let seat of selectedSeats) {
-      const [ticket] = await connection.query('SELECT * FROM tickets WHERE seat = ? AND status = ?', [seat, 'available']);
+    // 티켓 확인 및 예약 상태 확인
+    const [ticket] = await connection.query('SELECT * FROM tickets WHERE seat = ? AND status = ?', [seatId, 'available']);
 
-      if (ticket) {
-        totalPrice += ticket.price;
+    if (ticket) {
+      // 예약된 좌석으로 상태 업데이트
+      await connection.query('UPDATE tickets SET status = ? WHERE id = ?', ['reserved', ticket.id]);
 
-        // 예약된 좌석으로 상태 업데이트
-        await connection.query('UPDATE tickets SET status = ? WHERE id = ?', ['reserved', ticket.id]);
+      // 카트에 추가
+      await connection.query('INSERT INTO cart (seat, price) VALUES (?, ?)', [seatId, ticket.price]);
 
-        // 카트에 추가
-        await connection.query('INSERT INTO cart (seat, price) VALUES (?, ?)', [seat, ticket.price]);
-      }
+      res.json({ success: true, message: 'Seat added to cart.' });
+    } else {
+      res.json({ success: false, message: 'Seat not available for reservation.' });
     }
-
-    res.json({ success: true, totalPrice });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: 'Error reserving seats.' });
+    res.status(500).json({ success: false, message: 'Error adding seat to cart.' });
+  } finally {
+    connection.release();
+  }
+});
+
+// 좌석을 장바구니에서 제거
+app.post('/api/remove-from-cart', async (req, res) => {
+  const { seatId } = req.body;
+
+  const connection = await pool.getConnection();
+  try {
+    // 티켓 확인 및 예약 상태 확인
+    const [ticket] = await connection.query('SELECT * FROM cart WHERE seat = ?', [seatId]);
+
+    if (ticket) {
+      // 티켓을 예약 가능한 상태로 업데이트
+      await connection.query('UPDATE tickets SET status = ? WHERE seat = ?', ['available', seatId]);
+
+      // 카트에서 제거
+      await connection.query('DELETE FROM cart WHERE seat = ?', [seatId]);
+
+      res.json({ success: true, message: 'Seat removed from cart.' });
+    } else {
+      res.json({ success: false, message: 'Seat not found in cart.' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Error removing seat from cart.' });
   } finally {
     connection.release();
   }

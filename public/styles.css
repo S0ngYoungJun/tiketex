@@ -17,6 +17,6 @@
 }
 
 .seat.reserved {
-  background-color: #ccc;
+  background-color: orange;
   cursor: not-allowed;
 }
